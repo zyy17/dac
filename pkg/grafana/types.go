@@ -102,9 +102,10 @@ func (p *Panel) CovertToDashboardPanel() *dashboard.Panel {
 	}
 
 	panel := &dashboard.Panel{
-		Title: p.Title,
-		Unit:  p.GetUnit(),
-		Type:  p.Type,
+		Title:       p.Title,
+		Unit:        p.GetUnit(),
+		Type:        p.Type,
+		Description: p.Description,
 	}
 
 	for _, target := range p.Targets {

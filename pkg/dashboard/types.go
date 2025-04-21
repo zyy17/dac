@@ -26,6 +26,9 @@ type Panel struct {
 	// Type is the type of the panel.
 	Type string `json:"type,omitempty" yaml:"type,omitempty"`
 
+	// Description is the description of the panel.
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
 	// Unit is the unit of the panel.
 	Unit string `json:"unit,omitempty" yaml:"unit,omitempty"`
 
