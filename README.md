@@ -9,8 +9,10 @@ Compared with the relative closed Grafana dashboard JSON model, `dac` provides a
 ### Docker
 
 ```console
-docker run --rm ghcr.io/zyy17/dac:latest -i dashboard.json
+docker run --rm -v $(pwd):/data ghcr.io/zyy17/dac:latest -i /data/example/dashboard.json -o /data/example/dashboard.yaml -m
 ```
+
+`-m` is optional, it means the output markdown docs based on the Grafana dashboard.
 
 ## Development
 
