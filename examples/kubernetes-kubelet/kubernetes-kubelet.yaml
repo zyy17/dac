@@ -1,0 +1,238 @@
+groups:
+    - title: Running Kubelets
+      panels:
+        - title: Running Kubelets
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(kubelet_node_name{cluster="$cluster", job="integrations/kubernetes/kubelet"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Running Pods
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(kubelet_running_pods{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Running Containers
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(kubelet_running_containers{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Actual Volume Count
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(volume_manager_total_volumes{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance", state="actual_state_of_world"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Desired Volume Count
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(volume_manager_total_volumes{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance",state="desired_state_of_world"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Config Error Count
+          type: stat
+          unit: none
+          queries:
+            - expr: sum(rate(kubelet_node_config_error{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Operation Rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(kubelet_runtime_operations_total{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (operation_type, instance)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_type}}'
+        - title: Operation Error Rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(kubelet_runtime_operations_errors_total{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, operation_type)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_type}}'
+        - title: Operation Duration 99th quantile
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_runtime_operations_duration_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, operation_type, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_type}}'
+        - title: Pod Start Rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(kubelet_pod_start_duration_seconds_count{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} pod'
+            - expr: sum(rate(kubelet_pod_worker_duration_seconds_count{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance)
+              datasource:
+                type: prometheus
+                uid: ${DS_GRAFANACLOUD-K8SPROD-PROM}
+              legendFormat: '{{instance}} worker'
+        - title: Pod Start Duration
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_pod_start_duration_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} pod'
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_pod_worker_duration_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, le))
+              datasource:
+                type: prometheus
+                uid: ${DS_GRAFANACLOUD-K8SPROD-PROM}
+              legendFormat: '{{instance}} worker'
+        - title: Storage Operation Rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(storage_operation_duration_seconds_count{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, operation_name, volume_plugin)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_name}} {{volume_plugin}}'
+        - title: Storage Operation Error Rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(storage_operation_errors_total{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, operation_name, volume_plugin)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_name}} {{volume_plugin}}'
+        - title: Storage Operation Duration 99th quantile
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(storage_operation_duration_seconds_bucket{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval])) by (instance, operation_name, volume_plugin, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_name}} {{volume_plugin}}'
+        - title: Cgroup manager operation rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(kubelet_cgroup_manager_duration_seconds_count{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval])) by (instance, operation_type)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{operation_type}}'
+        - title: Cgroup manager 99th quantile
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_cgroup_manager_duration_seconds_bucket{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval])) by (instance, operation_type, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{operation_type}}'
+        - title: PLEG relist rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(kubelet_pleg_relist_duration_seconds_count{cluster="$cluster", job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval])) by (instance)
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'
+        - title: PLEG relist interval
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_pleg_relist_interval_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'
+        - title: PLEG relist duration
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(kubelet_pleg_relist_duration_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])) by (instance, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'
+        - title: RPC rate
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum(rate(rest_client_requests_total{cluster="$cluster",job="integrations/kubernetes/kubelet", instance=~"$instance",code=~"2.."}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: 2xx
+            - expr: sum(rate(rest_client_requests_total{cluster="$cluster",job="integrations/kubernetes/kubelet", instance=~"$instance",code=~"3.."}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: ${DS_GRAFANACLOUD-K8SPROD-PROM}
+              legendFormat: 3xx
+            - expr: sum(rate(rest_client_requests_total{cluster="$cluster",job="integrations/kubernetes/kubelet", instance=~"$instance",code=~"4.."}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: 4xx
+            - expr: sum(rate(rest_client_requests_total{cluster="$cluster",job="integrations/kubernetes/kubelet", instance=~"$instance",code=~"5.."}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: ${DS_GRAFANACLOUD-K8SPROD-PROM}
+              legendFormat: 5xx
+        - title: Request duration 99th quantile
+          type: timeseries
+          unit: s
+          queries:
+            - expr: histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{cluster="$cluster",job="integrations/kubernetes/kubelet", instance=~"$instance"}[$__rate_interval])) by (instance, verb, url, le))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}} {{verb}} {{url}}'
+        - title: Memory
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: process_resident_memory_bytes{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'
+        - title: CPU usage
+          type: timeseries
+          unit: short
+          queries:
+            - expr: rate(process_cpu_seconds_total{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'
+        - title: Goroutines
+          type: timeseries
+          unit: short
+          queries:
+            - expr: go_goroutines{cluster="$cluster",job="integrations/kubernetes/kubelet",instance=~"$instance"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{instance}}'

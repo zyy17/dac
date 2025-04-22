@@ -13,6 +13,7 @@ func Transform(grafanaDashboard *grafana.Dashboard) (*dashboard.Dashboard, error
 		isRow                 = false
 	)
 
+	// TODO(zyy17): Ugly code, need to refactor.
 	for _, panel := range grafanaDashboard.Panels {
 		if panel.Type == grafana.PanelTypeRow {
 			if len(panel.Panels) > 0 {
@@ -48,6 +49,15 @@ func Transform(grafanaDashboard *grafana.Dashboard) (*dashboard.Dashboard, error
 		}
 
 		if isRow {
+			if panel := panel.CovertToDashboardPanel(); panel != nil {
+				currentGroup.Panels = append(currentGroup.Panels, panel)
+			}
+		} else {
+			if currentGroup == nil {
+				currentGroup = &dashboard.Group{
+					Title: panel.Title,
+				}
+			}
 			if panel := panel.CovertToDashboardPanel(); panel != nil {
 				currentGroup.Panels = append(currentGroup.Panels, panel)
 			}
