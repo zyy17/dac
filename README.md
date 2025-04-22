@@ -9,10 +9,13 @@ Compared with the relative closed Grafana dashboard JSON model, `dac` provides a
 ### Docker
 
 ```console
-docker run --rm -v $(pwd):/data ghcr.io/zyy17/dac:latest -i /data/examples/dashboard.json -o /data/examples/dashboard.yaml -m
+docker run --rm -v $(pwd):/data ghcr.io/zyy17/dac:latest \
+ -i /data/examples/node-exporter-full/node-exporter-full.json \
+ -o /data/examples/node-exporter-full/node-exporter-full.yaml \
+ -m /data/examples/node-exporter-full/node-exporter-full.md
 ```
 
-`-m` is optional, it means the output markdown docs based on the Grafana dashboard.
+`-m`: Optional, the file path for the output markdown docs based on the Grafana dashboard.
 
 ## Development
 
@@ -23,3 +26,7 @@ make
 ```
 
 And the `dac` binary will be in `bin/`.
+
+## Examples
+
+Checkout the [examples](./examples) directory for more examples.

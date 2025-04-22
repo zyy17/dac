@@ -1,0 +1,1794 @@
+groups:
+    - title: Quick CPU / Mem / Disk
+      panels:
+        - title: Pressure
+          type: bargauge
+          description: Resource pressure via PSI
+          unit: percentunit
+          queries:
+            - expr: irate(node_pressure_cpu_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU
+            - expr: irate(node_pressure_memory_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Mem
+            - expr: irate(node_pressure_io_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: I/O
+        - title: CPU Busy
+          type: gauge
+          description: Busy state of all CPU cores together
+          unit: percent
+          queries:
+            - expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle", instance="$node"}[$__rate_interval])))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Sys Load
+          type: gauge
+          description: System load  over all CPU cores together
+          unit: percent
+          queries:
+            - expr: scalar(node_load1{instance="$node",job="$job"}) * 100 / count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: RAM Used
+          type: gauge
+          description: Non available RAM memory
+          unit: percent
+          queries:
+            - expr: ((node_memory_MemTotal_bytes{instance="$node", job="$job"} - node_memory_MemFree_bytes{instance="$node", job="$job"}) / node_memory_MemTotal_bytes{instance="$node", job="$job"}) * 100
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+            - expr: (1 - (node_memory_MemAvailable_bytes{instance="$node", job="$job"} / node_memory_MemTotal_bytes{instance="$node", job="$job"})) * 100
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: SWAP Used
+          type: gauge
+          description: Used Swap
+          unit: percent
+          queries:
+            - expr: ((node_memory_SwapTotal_bytes{instance="$node",job="$job"} - node_memory_SwapFree_bytes{instance="$node",job="$job"}) / (node_memory_SwapTotal_bytes{instance="$node",job="$job"})) * 100
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: Root FS Used
+          type: gauge
+          description: Used Root FS
+          unit: percent
+          queries:
+            - expr: 100 - ((node_filesystem_avail_bytes{instance="$node",job="$job",mountpoint="/",fstype!="rootfs"} * 100) / node_filesystem_size_bytes{instance="$node",job="$job",mountpoint="/",fstype!="rootfs"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: CPU Cores
+          type: stat
+          description: Total number of CPU cores
+          unit: short
+          queries:
+            - expr: count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: __auto
+        - title: Uptime
+          type: stat
+          description: System uptime
+          unit: s
+          queries:
+            - expr: node_time_seconds{instance="$node",job="$job"} - node_boot_time_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: RootFS Total
+          type: stat
+          description: Total RootFS
+          unit: bytes
+          queries:
+            - expr: node_filesystem_size_bytes{instance="$node",job="$job",mountpoint="/",fstype!="rootfs"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: RAM Total
+          type: stat
+          description: Total RAM
+          unit: bytes
+          queries:
+            - expr: node_memory_MemTotal_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+        - title: SWAP Total
+          type: stat
+          description: Total SWAP
+          unit: bytes
+          queries:
+            - expr: node_memory_SwapTotal_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+    - title: Basic CPU / Mem / Net / Disk
+      panels:
+        - title: CPU Basic
+          type: timeseries
+          description: Basic CPU info
+          unit: percentunit
+          queries:
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="system"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Busy System
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="user"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Busy User
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="iowait"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Busy Iowait
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode=~".*irq"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Busy IRQs
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Busy Other
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="idle"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Idle
+        - title: Memory Basic
+          type: timeseries
+          description: Basic memory usage
+          unit: bytes
+          queries:
+            - expr: node_memory_MemTotal_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RAM Total
+            - expr: node_memory_MemTotal_bytes{instance="$node",job="$job"} - node_memory_MemFree_bytes{instance="$node",job="$job"} - (node_memory_Cached_bytes{instance="$node",job="$job"} + node_memory_Buffers_bytes{instance="$node",job="$job"} + node_memory_SReclaimable_bytes{instance="$node",job="$job"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RAM Used
+            - expr: node_memory_Cached_bytes{instance="$node",job="$job"} + node_memory_Buffers_bytes{instance="$node",job="$job"} + node_memory_SReclaimable_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RAM Cache + Buffer
+            - expr: node_memory_MemFree_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RAM Free
+            - expr: (node_memory_SwapTotal_bytes{instance="$node",job="$job"} - node_memory_SwapFree_bytes{instance="$node",job="$job"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SWAP Used
+        - title: Network Traffic Basic
+          type: timeseries
+          description: Basic network info per interface
+          unit: bps
+          queries:
+            - expr: rate(node_network_receive_bytes_total{instance="$node",job="$job"}[$__rate_interval])*8
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: recv {{device}}
+            - expr: rate(node_network_transmit_bytes_total{instance="$node",job="$job"}[$__rate_interval])*8
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: 'trans {{device}} '
+        - title: Disk Space Used Basic
+          type: timeseries
+          description: Disk space used of all filesystems mounted
+          unit: percent
+          queries:
+            - expr: 100 - ((node_filesystem_avail_bytes{instance="$node",job="$job",device!~'rootfs'} * 100) / node_filesystem_size_bytes{instance="$node",job="$job",device!~'rootfs'})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}}'
+    - title: CPU / Memory / Net / Disk
+      panels:
+        - title: CPU
+          type: timeseries
+          unit: percentunit
+          queries:
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="system"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: System - Processes executing in kernel mode
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="user"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: User - Normal processes executing in user mode
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="nice"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Nice - Niced processes executing in user mode
+            - expr: sum by(instance) (irate(node_cpu_seconds_total{instance="$node",job="$job", mode="iowait"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Iowait - Waiting for I/O to complete
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="irq"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Irq - Servicing interrupts
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="softirq"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Softirq - Servicing softirqs
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="steal"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Steal - Time spent in other operating systems when running in a virtualized environment
+            - expr: sum(irate(node_cpu_seconds_total{instance="$node",job="$job", mode="idle"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{instance="$node",job="$job"}) by (cpu)))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Idle - Waiting for something to happen
+        - title: Memory Stack
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_MemTotal_bytes{instance="$node",job="$job"} - node_memory_MemFree_bytes{instance="$node",job="$job"} - node_memory_Buffers_bytes{instance="$node",job="$job"} - node_memory_Cached_bytes{instance="$node",job="$job"} - node_memory_Slab_bytes{instance="$node",job="$job"} - node_memory_PageTables_bytes{instance="$node",job="$job"} - node_memory_SwapCached_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Apps - Memory used by user-space applications
+            - expr: node_memory_PageTables_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: PageTables - Memory used to map between virtual and physical memory addresses
+            - expr: node_memory_SwapCached_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SwapCache - Memory that keeps track of pages that have been fetched from swap but not yet been modified
+            - expr: node_memory_Slab_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Slab - Memory used by the kernel to cache data structures for its own use (caches like inode, dentry, etc)
+            - expr: node_memory_Cached_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Cache - Parked file data (file content) cache
+            - expr: node_memory_Buffers_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Buffers - Block device (e.g. harddisk) cache
+            - expr: node_memory_MemFree_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Unused - Free memory unassigned
+            - expr: (node_memory_SwapTotal_bytes{instance="$node",job="$job"} - node_memory_SwapFree_bytes{instance="$node",job="$job"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Swap - Swap space used
+            - expr: node_memory_HardwareCorrupted_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Hardware Corrupted - Amount of RAM that the kernel identified as corrupted / not working
+        - title: Network Traffic
+          type: timeseries
+          unit: bps
+          queries:
+            - expr: rate(node_network_receive_bytes_total{instance="$node",job="$job"}[$__rate_interval])*8
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive'
+            - expr: rate(node_network_transmit_bytes_total{instance="$node",job="$job"}[$__rate_interval])*8
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit'
+        - title: Disk Space Used
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_filesystem_size_bytes{instance="$node",job="$job",device!~'rootfs'} - node_filesystem_avail_bytes{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}}'
+        - title: Disk IOps
+          type: timeseries
+          unit: iops
+          queries:
+            - expr: irate(node_disk_reads_completed_total{instance="$node",job="$job",device=~"$diskdevices"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Reads completed'
+            - expr: irate(node_disk_writes_completed_total{instance="$node",job="$job",device=~"$diskdevices"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Writes completed'
+        - title: I/O Usage Read / Write
+          type: timeseries
+          unit: Bps
+          queries:
+            - expr: irate(node_disk_read_bytes_total{instance="$node",job="$job",device=~"$diskdevices"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Successfully read bytes'
+            - expr: irate(node_disk_written_bytes_total{instance="$node",job="$job",device=~"$diskdevices"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Successfully written bytes'
+        - title: I/O Utilization
+          type: timeseries
+          unit: percentunit
+          queries:
+            - expr: irate(node_disk_io_time_seconds_total{instance="$node",job="$job",device=~"$diskdevices"} [$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}}'
+        - title: CPU spent seconds in guests (VMs)
+          type: timeseries
+          unit: percentunit
+          queries:
+            - expr: sum by(instance) (irate(node_cpu_guest_seconds_total{instance="$node",job="$job", mode="user"}[1m])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance="$node",job="$job"}[1m])))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Guest - Time spent running a virtual CPU for a guest operating system
+            - expr: sum by(instance) (irate(node_cpu_guest_seconds_total{instance="$node",job="$job", mode="nice"}[1m])) / on(instance) group_left sum by (instance)((irate(node_cpu_seconds_total{instance="$node",job="$job"}[1m])))
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: GuestNice - Time spent running a niced guest  (virtual CPU for guest operating system)
+    - title: Memory Meminfo
+      panels:
+        - title: Memory Active / Inactive
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Inactive_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Inactive - Memory which has been less recently used.  It is more eligible to be reclaimed for other purposes
+            - expr: node_memory_Active_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Active - Memory that has been used more recently and usually not reclaimed unless absolutely necessary
+        - title: Memory Committed
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Committed_AS_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Committed_AS - Amount of memory presently allocated on the system
+            - expr: node_memory_CommitLimit_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CommitLimit - Amount of  memory currently available to be allocated on the system
+        - title: Memory Active / Inactive Detail
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Inactive_file_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Inactive_file - File-backed memory on inactive LRU list
+            - expr: node_memory_Inactive_anon_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Inactive_anon - Anonymous and swap cache on inactive LRU list, including tmpfs (shmem)
+            - expr: node_memory_Active_file_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Active_file - File-backed memory on active LRU list
+            - expr: node_memory_Active_anon_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Active_anon - Anonymous and swap cache on active least-recently-used (LRU) list, including tmpfs
+        - title: Memory Writeback and Dirty
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Writeback_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Writeback - Memory which is actively being written back to disk
+            - expr: node_memory_WritebackTmp_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: WritebackTmp - Memory used by FUSE for temporary writeback buffers
+            - expr: node_memory_Dirty_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Dirty - Memory which is waiting to get written back to the disk
+        - title: Memory Shared and Mapped
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Mapped_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Mapped - Used memory in mapped pages files which have been mapped, such as libraries
+            - expr: node_memory_Shmem_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Shmem - Used shared memory (shared between several processes, thus including RAM disks)
+            - expr: node_memory_ShmemHugePages_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: ShmemHugePages - Memory used by shared memory (shmem) and tmpfs allocated  with huge pages
+            - expr: node_memory_ShmemPmdMapped_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: ShmemPmdMapped - Amount of shared (shmem/tmpfs) memory backed by huge pages
+        - title: Memory Slab
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_SUnreclaim_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SUnreclaim - Part of Slab, that cannot be reclaimed on memory pressure
+            - expr: node_memory_SReclaimable_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SReclaimable - Part of Slab, that might be reclaimed, such as caches
+        - title: Memory Vmalloc
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_VmallocChunk_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: VmallocChunk - Largest contiguous block of vmalloc area which is free
+            - expr: node_memory_VmallocTotal_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: VmallocTotal - Total size of vmalloc memory area
+            - expr: node_memory_VmallocUsed_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: VmallocUsed - Amount of vmalloc area which is used
+        - title: Memory Bounce
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Bounce_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Bounce - Memory used for block device bounce buffers
+        - title: Memory Anonymous
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_AnonHugePages_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: AnonHugePages - Memory in anonymous huge pages
+            - expr: node_memory_AnonPages_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: AnonPages - Memory in user pages not backed by files
+        - title: Memory Kernel / CPU
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_KernelStack_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: KernelStack - Kernel memory stack. This is not reclaimable
+            - expr: node_memory_Percpu_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: PerCPU - Per CPU memory allocated dynamically by loadable modules
+        - title: Memory HugePages Counter
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_memory_HugePages_Free{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: HugePages_Free - Huge pages in the pool that are not yet allocated
+            - expr: node_memory_HugePages_Rsvd{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: HugePages_Rsvd - Huge pages for which a commitment to allocate from the pool has been made, but no allocation has yet been made
+            - expr: node_memory_HugePages_Surp{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: HugePages_Surp - Huge pages in the pool above the value in /proc/sys/vm/nr_hugepages
+        - title: Memory HugePages Size
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_HugePages_Total{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: HugePages - Total size of the pool of huge pages
+            - expr: node_memory_Hugepagesize_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Hugepagesize - Huge Page size
+        - title: Memory DirectMap
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_DirectMap1G_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: DirectMap1G - Amount of pages mapped as this size
+            - expr: node_memory_DirectMap2M_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: DirectMap2M - Amount of pages mapped as this size
+            - expr: node_memory_DirectMap4k_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: DirectMap4K - Amount of pages mapped as this size
+        - title: Memory Unevictable and MLocked
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_Unevictable_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Unevictable - Amount of unevictable memory that can't be swapped out for a variety of reasons
+            - expr: node_memory_Mlocked_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: MLocked - Size of pages locked to memory using the mlock() system call
+        - title: Memory NFS
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_memory_NFS_Unstable_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: NFS Unstable - Memory in NFS pages sent to the server, but not yet committed to the storage
+    - title: Memory Vmstat
+      panels:
+        - title: Memory Pages In / Out
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_vmstat_pgpgin{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pagesin - Page in operations
+            - expr: irate(node_vmstat_pgpgout{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pagesout - Page out operations
+        - title: Memory Pages Swap In / Out
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_vmstat_pswpin{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pswpin - Pages swapped in
+            - expr: irate(node_vmstat_pswpout{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pswpout - Pages swapped out
+        - title: Memory Page Faults
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_vmstat_pgfault{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pgfault - Page major and minor fault operations
+            - expr: irate(node_vmstat_pgmajfault{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pgmajfault - Major page fault operations
+            - expr: irate(node_vmstat_pgfault{instance="$node",job="$job"}[$__rate_interval])  - irate(node_vmstat_pgmajfault{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Pgminfault - Minor page fault operations
+        - title: OOM Killer
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_vmstat_oom_kill{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: 'oom killer invocations '
+    - title: System Timesync
+      panels:
+        - title: Time Synchronized Drift
+          type: timeseries
+          unit: s
+          queries:
+            - expr: node_timex_estimated_error_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Estimated error in seconds
+            - expr: node_timex_offset_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Time offset in between local system and reference clock
+            - expr: node_timex_maxerror_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Maximum error in seconds
+        - title: Time PLL Adjust
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_timex_loop_time_constant{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Phase-locked loop time adjust
+        - title: Time Synchronized Status
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_timex_sync_status{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Is clock synchronized to a reliable server (1 = yes, 0 = no)
+            - expr: node_timex_frequency_adjustment_ratio{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Local clock frequency adjustment
+        - title: Time Misc
+          type: timeseries
+          unit: s
+          queries:
+            - expr: node_timex_tick_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Seconds between clock ticks
+            - expr: node_timex_tai_offset_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: International Atomic Time (TAI) offset
+    - title: System Processes
+      panels:
+        - title: Processes Status
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_procs_blocked{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Processes blocked waiting for I/O to complete
+            - expr: node_procs_running{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Processes in runnable state
+        - title: Processes State
+          type: timeseries
+          description: Enable with --collector.processes argument on node-exporter
+          unit: short
+          queries:
+            - expr: node_processes_state{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ state }}'
+        - title: Processes  Forks
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_forks_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Processes forks second
+        - title: Processes Memory
+          type: timeseries
+          unit: decbytes
+          queries:
+            - expr: irate(process_virtual_memory_bytes{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Processes virtual memory size in bytes
+            - expr: process_resident_memory_max_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Maximum amount of virtual memory available in bytes
+            - expr: irate(process_virtual_memory_bytes{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Processes virtual memory size in bytes
+            - expr: irate(process_virtual_memory_max_bytes{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Maximum amount of virtual memory available in bytes
+        - title: PIDs Number and Limit
+          type: timeseries
+          description: Enable with --collector.processes argument on node-exporter
+          unit: short
+          queries:
+            - expr: node_processes_pids{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Number of PIDs
+            - expr: node_processes_max_processes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: PIDs limit
+        - title: Process schedule stats Running / Waiting
+          type: timeseries
+          unit: s
+          queries:
+            - expr: irate(node_schedstat_running_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{ cpu }} - seconds spent running a process
+            - expr: irate(node_schedstat_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{ cpu }} - seconds spent by processing waiting for this CPU
+        - title: Threads Number and Limit
+          type: timeseries
+          description: Enable with --collector.processes argument on node-exporter
+          unit: short
+          queries:
+            - expr: node_processes_threads{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Allocated threads
+            - expr: node_processes_max_threads{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Threads limit
+    - title: System Misc
+      panels:
+        - title: Context Switches / Interrupts
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_context_switches_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Context switches
+            - expr: irate(node_intr_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Interrupts
+        - title: System Load
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_load1{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Load 1m
+            - expr: node_load5{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Load 5m
+            - expr: node_load15{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Load 15m
+        - title: CPU Frequency Scaling
+          type: timeseries
+          unit: hertz
+          queries:
+            - expr: node_cpu_scaling_frequency_hertz{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{ cpu }}
+            - expr: avg(node_cpu_scaling_frequency_max_hertz{instance="$node",job="$job"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Max
+            - expr: avg(node_cpu_scaling_frequency_min_hertz{instance="$node",job="$job"})
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Min
+        - title: Pressure Stall Information
+          type: timeseries
+          description: https://docs.kernel.org/accounting/psi.html
+          unit: percentunit
+          queries:
+            - expr: rate(node_pressure_cpu_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU some
+            - expr: rate(node_pressure_memory_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Memory some
+            - expr: rate(node_pressure_memory_stalled_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Memory full
+            - expr: rate(node_pressure_io_waiting_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: I/O some
+            - expr: rate(node_pressure_io_stalled_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: I/O full
+        - title: Interrupts Detail
+          type: timeseries
+          description: Enable with --collector.interrupts argument on node-exporter
+          unit: short
+          queries:
+            - expr: irate(node_interrupts_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ type }} - {{ info }}'
+        - title: Schedule timeslices executed by each cpu
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_schedstat_timeslices_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{ cpu }}
+        - title: Entropy
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_entropy_available_bits{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Entropy available to random number generators
+        - title: CPU time spent in user and system contexts
+          type: timeseries
+          unit: s
+          queries:
+            - expr: irate(process_cpu_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Time spent
+        - title: File Descriptors
+          type: timeseries
+          unit: short
+          queries:
+            - expr: process_max_fds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Maximum open file descriptors
+            - expr: process_open_fds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Open file descriptors
+    - title: Hardware Misc
+      panels:
+        - title: Hardware temperature monitor
+          type: timeseries
+          unit: celsius
+          queries:
+            - expr: node_hwmon_temp_celsius{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} temp'
+            - expr: node_hwmon_temp_crit_alarm_celsius{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} Critical Alarm'
+            - expr: node_hwmon_temp_crit_celsius{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} Critical'
+            - expr: node_hwmon_temp_crit_hyst_celsius{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} Critical Historical'
+            - expr: node_hwmon_temp_max_celsius{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} Max'
+        - title: Throttle cooling device
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_cooling_device_cur_state{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Current {{ name }} in {{ type }}
+            - expr: node_cooling_device_max_state{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Max {{ name }} in {{ type }}
+        - title: Power supply
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_power_supply_online{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ power_supply }} online'
+        - title: Hardware fan speed
+          type: timeseries
+          unit: rotrpm
+          queries:
+            - expr: node_hwmon_fan_rpm{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} rpm'
+            - expr: node_hwmon_fan_min_rpm{instance="$node",job="$job"} * on(chip) group_left(chip_name) node_hwmon_chip_names{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ chip_name }} {{ sensor }} minimum rpm'
+    - title: Systemd
+      panels:
+        - title: Systemd Sockets
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_systemd_socket_accepted_connections_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ name }} Connections'
+        - title: Systemd Units State
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_systemd_units{instance="$node",job="$job",state="activating"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Activating
+            - expr: node_systemd_units{instance="$node",job="$job",state="active"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Active
+            - expr: node_systemd_units{instance="$node",job="$job",state="deactivating"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Deactivating
+            - expr: node_systemd_units{instance="$node",job="$job",state="failed"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Failed
+            - expr: node_systemd_units{instance="$node",job="$job",state="inactive"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Inactive
+    - title: Storage Disk
+      panels:
+        - title: Disk IOps Completed
+          type: timeseries
+          description: The number (after merges) of I/O requests completed per second for the device
+          unit: iops
+          queries:
+            - expr: irate(node_disk_reads_completed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Reads completed'
+            - expr: irate(node_disk_writes_completed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Writes completed'
+        - title: Disk R/W Data
+          type: timeseries
+          description: The number of bytes read from or written to the device per second
+          unit: Bps
+          queries:
+            - expr: irate(node_disk_read_bytes_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Read bytes'
+            - expr: irate(node_disk_written_bytes_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Written bytes'
+        - title: Disk Average Wait Time
+          type: timeseries
+          description: The average time for requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them.
+          unit: s
+          queries:
+            - expr: irate(node_disk_read_time_seconds_total{instance="$node",job="$job"}[$__rate_interval]) / irate(node_disk_reads_completed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Read wait time avg'
+            - expr: irate(node_disk_write_time_seconds_total{instance="$node",job="$job"}[$__rate_interval]) / irate(node_disk_writes_completed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Write wait time avg'
+        - title: Average Queue Size
+          type: timeseries
+          description: The average queue length of the requests that were issued to the device
+          unit: none
+          queries:
+            - expr: irate(node_disk_io_time_weighted_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}}'
+        - title: Disk R/W Merged
+          type: timeseries
+          description: The number of read and write requests merged per second that were queued to the device
+          unit: iops
+          queries:
+            - expr: irate(node_disk_reads_merged_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Read merged'
+            - expr: irate(node_disk_writes_merged_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Write merged'
+        - title: Time Spent Doing I/Os
+          type: timeseries
+          description: Percentage of elapsed time during which I/O requests were issued to the device (bandwidth utilization for the device). Device saturation occurs when this value is close to 100% for devices serving requests serially.  But for devices  serving requests in parallel, such as RAID arrays and modern SSDs, this number does not reflect their performance limits.
+          unit: percentunit
+          queries:
+            - expr: irate(node_disk_io_time_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - IO'
+            - expr: irate(node_disk_discard_time_seconds_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - discard'
+        - title: Instantaneous Queue Size
+          type: timeseries
+          description: The number of outstanding requests at the instant the sample was taken. Incremented as requests are given to appropriate struct request_queue and decremented as they finish.
+          unit: none
+          queries:
+            - expr: node_disk_io_now{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - IO now'
+        - title: Disk IOps Discards completed / merged
+          type: timeseries
+          unit: iops
+          queries:
+            - expr: irate(node_disk_discards_completed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Discards completed'
+            - expr: irate(node_disk_discards_merged_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Discards merged'
+    - title: Storage Filesystem
+      panels:
+        - title: Filesystem space available
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_filesystem_avail_bytes{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - Available'
+            - expr: node_filesystem_free_bytes{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - Free'
+            - expr: node_filesystem_size_bytes{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - Size'
+        - title: File Nodes Free
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_filesystem_files_free{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - Free file nodes'
+        - title: File Descriptor
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_filefd_maximum{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Max open files
+            - expr: node_filefd_allocated{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Open files
+        - title: File Nodes Size
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_filesystem_files{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - File nodes total'
+        - title: Filesystem in ReadOnly / Error
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_filesystem_readonly{instance="$node",job="$job",device!~'rootfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - ReadOnly'
+            - expr: node_filesystem_device_error{instance="$node",job="$job",device!~'rootfs',fstype!~'tmpfs'}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{mountpoint}} - Device error'
+    - title: Network Traffic
+      panels:
+        - title: Network Traffic by Packets
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_packets_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive'
+            - expr: rate(node_network_transmit_packets_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit'
+        - title: Network Traffic Errors
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_errs_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive errors'
+            - expr: rate(node_network_transmit_errs_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit errors'
+        - title: Network Traffic Drop
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_drop_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive drop'
+            - expr: rate(node_network_transmit_drop_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit drop'
+        - title: Network Traffic Compressed
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_compressed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive compressed'
+            - expr: rate(node_network_transmit_compressed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit compressed'
+        - title: Network Traffic Multicast
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_multicast_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive multicast'
+        - title: Network Traffic Fifo
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_fifo_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive fifo'
+            - expr: rate(node_network_transmit_fifo_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit fifo'
+        - title: Network Traffic Frame
+          type: timeseries
+          unit: pps
+          queries:
+            - expr: rate(node_network_receive_frame_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Receive frame'
+        - title: Network Traffic Carrier
+          type: timeseries
+          unit: short
+          queries:
+            - expr: rate(node_network_transmit_carrier_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Statistic transmit_carrier'
+        - title: Network Traffic Colls
+          type: timeseries
+          unit: short
+          queries:
+            - expr: rate(node_network_transmit_colls_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Transmit colls'
+        - title: NF Conntrack
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_nf_conntrack_entries{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: NF conntrack entries
+            - expr: node_nf_conntrack_entries_limit{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: NF conntrack limit
+        - title: ARP Entries
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_arp_entries{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ device }} - ARP entries'
+        - title: MTU
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_network_mtu_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ device }} - Bytes'
+        - title: Speed
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_network_speed_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ device }} - Speed'
+        - title: Queue Length
+          type: timeseries
+          unit: none
+          queries:
+            - expr: node_network_transmit_queue_length{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{ device }} -   Interface transmit queue length'
+        - title: Softnet Packets
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_softnet_processed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{cpu}} - Processed
+            - expr: irate(node_softnet_dropped_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{cpu}} - Dropped
+        - title: Softnet Out of Quota
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_softnet_times_squeezed_total{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CPU {{cpu}} - Squeezed
+        - title: Network Operational Status
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_network_up{operstate="up",instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{interface}} - Operational state UP'
+            - expr: node_network_carrier{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{device}} - Physical link state'
+    - title: Network Sockstat
+      panels:
+        - title: Sockstat TCP
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_sockstat_TCP_alloc{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCP_alloc - Allocated sockets
+            - expr: node_sockstat_TCP_inuse{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCP_inuse - Tcp sockets currently in use
+            - expr: node_sockstat_TCP_mem{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCP_mem - Used memory for tcp
+            - expr: node_sockstat_TCP_orphan{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCP_orphan - Orphan sockets
+            - expr: node_sockstat_TCP_tw{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCP_tw - Sockets waiting close
+        - title: Sockstat UDP
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_sockstat_UDPLITE_inuse{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: UDPLITE_inuse - Udplite sockets currently in use
+            - expr: node_sockstat_UDP_inuse{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: UDP_inuse - Udp sockets currently in use
+            - expr: node_sockstat_UDP_mem{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: UDP_mem - Used memory for udp
+        - title: Sockstat FRAG / RAW
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_sockstat_FRAG_inuse{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: FRAG_inuse - Frag sockets currently in use
+            - expr: node_sockstat_RAW_inuse{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RAW_inuse - Raw sockets currently in use
+        - title: Sockstat Memory Size
+          type: timeseries
+          unit: bytes
+          queries:
+            - expr: node_sockstat_TCP_mem_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: mem_bytes - TCP sockets in that state
+            - expr: node_sockstat_UDP_mem_bytes{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: mem_bytes - UDP sockets in that state
+            - expr: node_sockstat_FRAG_memory{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: FRAG_memory - Used memory for frag
+        - title: Sockstat Used
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_sockstat_sockets_used{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Sockets_used - Sockets currently in use
+    - title: Network Netstat
+      panels:
+        - title: Netstat IP In / Out Octets
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_IpExt_InOctets{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InOctets - Received octets
+            - expr: irate(node_netstat_IpExt_OutOctets{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: OutOctets - Sent octets
+        - title: Netstat IP Forwarding
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Ip_Forwarding{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: Forwarding - IP forwarding
+        - title: ICMP In / Out
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Icmp_InMsgs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InMsgs -  Messages which the entity received. Note that this counter includes all those counted by icmpInErrors
+            - expr: irate(node_netstat_Icmp_OutMsgs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: OutMsgs - Messages which this entity attempted to send. Note that this counter includes all those counted by icmpOutErrors
+        - title: ICMP Errors
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Icmp_InErrors{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InErrors - Messages which the entity received but determined as having ICMP-specific errors (bad ICMP checksums, bad length, etc.)
+        - title: UDP In / Out
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Udp_InDatagrams{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InDatagrams - Datagrams received
+            - expr: irate(node_netstat_Udp_OutDatagrams{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: OutDatagrams - Datagrams sent
+        - title: UDP Errors
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Udp_InErrors{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InErrors - UDP Datagrams that could not be delivered to an application
+            - expr: irate(node_netstat_Udp_NoPorts{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: NoPorts - UDP Datagrams received on a port with no listener
+            - expr: irate(node_netstat_UdpLite_InErrors{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InErrors Lite - UDPLite Datagrams that could not be delivered to an application
+            - expr: irate(node_netstat_Udp_RcvbufErrors{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RcvbufErrors - UDP buffer errors received
+            - expr: irate(node_netstat_Udp_SndbufErrors{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SndbufErrors - UDP buffer errors send
+        - title: TCP In / Out
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Tcp_InSegs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InSegs - Segments received, including those received in error. This count includes segments received on currently established connections
+            - expr: irate(node_netstat_Tcp_OutSegs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: OutSegs - Segments sent, including those on current connections but excluding those containing only retransmitted octets
+        - title: TCP Errors
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_TcpExt_ListenOverflows{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: ListenOverflows - Times the listen queue of a socket overflowed
+            - expr: irate(node_netstat_TcpExt_ListenDrops{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: ListenDrops - SYNs to LISTEN sockets ignored
+            - expr: irate(node_netstat_TcpExt_TCPSynRetrans{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCPSynRetrans - SYN-SYN/ACK retransmits to break down retransmissions in SYN, fast/timeout retransmits
+            - expr: irate(node_netstat_Tcp_RetransSegs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: RetransSegs - Segments retransmitted - that is, the number of TCP segments transmitted containing one or more previously transmitted octets
+            - expr: irate(node_netstat_Tcp_InErrs{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: InErrs - Segments received in error (e.g., bad TCP checksums)
+            - expr: irate(node_netstat_Tcp_OutRsts{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: OutRsts - Segments sent with RST flag
+            - expr: irate(node_netstat_TcpExt_TCPRcvQDrop{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCPRcvQDrop - Packets meant to be queued in rcv queue but dropped because socket rcvbuf limit hit
+            - expr: irate(node_netstat_TcpExt_TCPOFOQueue{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: TCPOFOQueue - TCP layer receives an out of order packet and has enough memory to queue it
+        - title: TCP Connections
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_netstat_Tcp_CurrEstab{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: CurrEstab - TCP connections for which the current state is either ESTABLISHED or CLOSE- WAIT
+            - expr: node_netstat_Tcp_MaxConn{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: MaxConn - Limit on the total number of TCP connections the entity can support (Dynamic is "-1")
+        - title: TCP SynCookie
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_TcpExt_SyncookiesFailed{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SyncookiesFailed - Invalid SYN cookies received
+            - expr: irate(node_netstat_TcpExt_SyncookiesRecv{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SyncookiesRecv - SYN cookies received
+            - expr: irate(node_netstat_TcpExt_SyncookiesSent{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: SyncookiesSent - SYN cookies sent
+        - title: TCP Direct Transition
+          type: timeseries
+          unit: short
+          queries:
+            - expr: irate(node_netstat_Tcp_ActiveOpens{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: ActiveOpens - TCP connections that have made a direct transition to the SYN-SENT state from the CLOSED state
+            - expr: irate(node_netstat_Tcp_PassiveOpens{instance="$node",job="$job"}[$__rate_interval])
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: PassiveOpens - TCP connections that have made a direct transition to the SYN-RCVD state from the LISTEN state
+        - title: TCP Stat
+          type: timeseries
+          description: Enable with --collector.tcpstat argument on node-exporter
+          unit: short
+          queries:
+            - expr: node_tcp_connection_states{state="established",instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: established - TCP sockets in established state
+            - expr: node_tcp_connection_states{state="fin_wait2",instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: fin_wait2 - TCP sockets in fin_wait2 state
+            - expr: node_tcp_connection_states{state="listen",instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: listen - TCP sockets in listen state
+            - expr: node_tcp_connection_states{state="time_wait",instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: time_wait - TCP sockets in time_wait state
+    - title: Node Exporter
+      panels:
+        - title: Node Exporter Scrape Time
+          type: timeseries
+          unit: s
+          queries:
+            - expr: node_scrape_collector_duration_seconds{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{collector}} - Scrape duration'
+        - title: Node Exporter Scrape
+          type: timeseries
+          unit: short
+          queries:
+            - expr: node_scrape_collector_success{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{collector}} - Scrape success'
+            - expr: node_textfile_scrape_error{instance="$node",job="$job"}
+              datasource:
+                type: prometheus
+                uid: ${datasource}
+              legendFormat: '{{collector}} - Scrape textfile error (1 = true)'

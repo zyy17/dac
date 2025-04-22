@@ -1,0 +1,187 @@
+groups:
+    - title: Deployed Versions
+      panels:
+        - title: Pilot Versions
+          type: timeseries
+          description: Version number of each running instance
+          queries:
+            - expr: sum by (tag) (istio_build{component="pilot"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Version ({{tag}})
+    - title: Resource Usage
+      panels:
+        - title: Memory Usage
+          type: timeseries
+          description: Memory usage of each running instance
+          unit: bytes
+          queries:
+            - expr: sum by (pod) (container_memory_working_set_bytes{container="discovery",pod=~"istiod-.*"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Container ({{pod}})
+            - expr: sum by (pod) (go_memstats_stack_inuse_bytes{app="istiod"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Stack ({{pod}})
+            - expr: sum by (pod) (go_memstats_heap_inuse_bytes{app="istiod"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Heap (In Use) ({{pod}})
+            - expr: sum by (pod) (go_memstats_heap_alloc_bytes{app="istiod"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Heap (Allocated) ({{pod}})
+        - title: Memory Allocations
+          type: timeseries
+          description: Details about memory allocations
+          unit: Bps
+          queries:
+            - expr: sum by (pod) (rate(go_memstats_alloc_bytes_total{app="istiod"}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Bytes ({{pod}})
+            - expr: sum by (pod) (rate(go_memstats_mallocs_total{app="istiod"}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Objects ({{pod}})
+        - title: CPU Usage
+          type: timeseries
+          description: CPU usage of each running instance
+          queries:
+            - expr: sum by (pod) (irate(container_cpu_usage_seconds_total{container="discovery",pod=~"istiod-.*"}[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Container ({{pod}})
+        - title: Goroutines
+          type: timeseries
+          description: Goroutine count for each running instance
+          queries:
+            - expr: sum by (pod) (go_goroutines{app="istiod"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Goroutines ({{pod}})
+    - title: Push Information
+      panels:
+        - title: XDS Pushes
+          type: timeseries
+          unit: ops
+          queries:
+            - expr: sum by (type) (irate(pilot_xds_pushes[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: '{{type}}'
+        - title: Events
+          type: timeseries
+          description: |
+            Size of each xDS push.
+          queries:
+            - expr: sum by (type,event) (rate(pilot_k8s_reg_events[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: '{{event}} {{type}}'
+            - expr: sum by (type,event) (rate(pilot_k8s_cfg_events[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: '{{event}} {{type}}'
+            - expr: sum by (type) (rate(pilot_push_triggers[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Push {{type}}
+        - title: Connections
+          type: timeseries
+          description: |
+            Total number of XDS connections
+          queries:
+            - expr: sum(envoy_cluster_upstream_cx_active{cluster_name="xds-grpc"})
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Connections (client reported)
+            - expr: sum (pilot_xds)
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Connections (server reported)
+        - title: Push Errors
+          type: timeseries
+          description: |
+            Number of push errors. Many of these are at least potentional fatal and should be explored in-depth via Istiod logs.
+            Note: metrics here do not use rate() to avoid missing transition from "No series"; series are not reported if there are no errors at all.
+          queries:
+            - expr: sum by (type) (pilot_total_xds_rejects)
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Rejected Config ({{type}})
+            - expr: pilot_total_xds_internal_errors
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Internal Errors
+        - title: Push Time
+          type: heatmap
+          description: |
+            Count of active and pending proxies managed by each instance.
+            Pending is expected to converge to zero.
+          queries:
+            - expr: sum(rate(pilot_xds_push_time_bucket{}[1m])) by (le)
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: '{{le}}'
+        - title: Push Size
+          type: heatmap
+          description: |
+            Size of each xDS push.
+          queries:
+            - expr: sum(rate(pilot_xds_config_size_bytes_bucket{}[1m])) by (le)
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: '{{le}}'
+    - title: Webhooks
+      panels:
+        - title: Validation
+          type: timeseries
+          description: |
+            Rate of XDS push operations, by type. This is incremented on a per-proxy basis.
+          queries:
+            - expr: sum (rate(galley_validation_passed[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Success
+            - expr: sum (rate(galley_validation_failed[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Failure
+        - title: Injection
+          type: timeseries
+          description: |
+            Size of each xDS push.
+          queries:
+            - expr: sum (rate(sidecar_injection_success_total[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Success
+            - expr: sum (rate(sidecar_injection_failure_total[$__rate_interval]))
+              datasource:
+                type: prometheus
+                uid: $datasource
+              legendFormat: Failure

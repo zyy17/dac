@@ -15,7 +15,7 @@ import (
 func main() {
 	var input = flag.String("i", "", "input file")
 	var output = flag.String("o", "", "output file")
-	var markdown = flag.Bool("m", false, "output markdown")
+	var markdown = flag.String("m", "", "output path for markdown")
 	flag.Parse()
 
 	if input == nil {
@@ -42,14 +42,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *markdown {
-		fmt.Printf("%s", dashboard.ToMarkdown())
+	if *markdown != "" {
+		if err := os.WriteFile(*markdown, []byte(dashboard.ToMarkdown()), 0644); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// If output file is specified, write to file.
 	if *output != "" {
-		err = os.WriteFile(*output, data, 0644)
-		if err != nil {
+		if err := os.WriteFile(*output, data, 0644); err != nil {
 			log.Fatal(err)
 		}
 	} else {
