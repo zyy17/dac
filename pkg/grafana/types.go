@@ -1,6 +1,8 @@
 package grafana
 
 import (
+	"strings"
+
 	"github.com/zyy17/dac/pkg/dashboard"
 )
 
@@ -113,7 +115,7 @@ func (p *Panel) CovertToDashboardPanel() *dashboard.Panel {
 		if target.Expr != "" {
 			expr = target.Expr
 		} else {
-			expr = target.RawSql
+			expr = strings.TrimSpace(target.RawSql)
 		}
 		panel.Queries = append(panel.Queries, &dashboard.Query{
 			Expr:         expr,

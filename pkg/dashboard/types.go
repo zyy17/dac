@@ -1,5 +1,11 @@
 package dashboard
 
+import (
+	"bytes"
+	"fmt"
+	"strings"
+)
+
 // Dashboard is a lightweight dashboard definition.
 type Dashboard struct {
 	// Groups contains a list of Group. For each group, it contains a list of Panels.
@@ -55,4 +61,44 @@ type Datasource struct {
 
 	// UID is the uid of the datasource.
 	UID string `json:"uid,omitempty" yaml:"uid,omitempty"`
+}
+
+const (
+	PlaceholderForEmpty = "--"
+	BRTag               = "<br/>"
+)
+
+func (d *Dashboard) ToMarkdown() string {
+	var buf bytes.Buffer
+
+	for _, group := range d.Groups {
+		buf.WriteString(fmt.Sprintf("# %s\n", group.Title))
+		buf.WriteString("| Title | Query | Type | Description | Unit | Datasource |\n")
+		buf.WriteString("| --- | --- | --- | --- | --- | --- |\n")
+		for _, panel := range group.Panels {
+			var query string
+			if len(panel.Queries) > 0 {
+				var queries []string
+				for _, query := range panel.Queries {
+					queries = append(queries, codeRef(query.Expr))
+				}
+				query = strings.Join(queries, BRTag)
+			} else {
+				query = codeRef(panel.Queries[0].Expr)
+			}
+
+			// Replace `\n` with `<br/>` for description.
+			description := strings.ReplaceAll(panel.Description, "\n", BRTag)
+			buf.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n", panel.Title, query, codeRef(panel.Type), description, codeRef(panel.Unit), codeRef(panel.Queries[0].Datasource.Type)))
+		}
+	}
+
+	return buf.String()
+}
+
+func codeRef(content string) string {
+	if len(content) == 0 {
+		return PlaceholderForEmpty
+	}
+	return fmt.Sprintf("`%s`", content)
 }

@@ -54,5 +54,9 @@ func Transform(grafanaDashboard *grafana.Dashboard) (*dashboard.Dashboard, error
 		}
 	}
 
+	if currentGroup != nil {
+		intermediateDashboard.Groups = append(intermediateDashboard.Groups, currentGroup)
+	}
+
 	return &intermediateDashboard, nil
 }

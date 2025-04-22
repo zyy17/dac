@@ -14,6 +14,8 @@ import (
 
 func main() {
 	var input = flag.String("i", "", "input file")
+	var output = flag.String("o", "", "output file")
+	var markdown = flag.Bool("m", false, "output markdown")
 	flag.Parse()
 
 	if input == nil {
@@ -26,8 +28,7 @@ func main() {
 	}
 
 	var grafanaDashboard grafana.Dashboard
-	err = json.Unmarshal(content, &grafanaDashboard)
-	if err != nil {
+	if err = json.Unmarshal(content, &grafanaDashboard); err != nil {
 		log.Fatal(err)
 	}
 
@@ -40,5 +41,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s", string(data))
+
+	if *markdown {
+		fmt.Printf("%s", dashboard.ToMarkdown())
+	}
+
+	// If output file is specified, write to file.
+	if *output != "" {
+		err = os.WriteFile(*output, data, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		fmt.Printf("%s", string(data))
+	}
 }
