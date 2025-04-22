@@ -73,8 +73,8 @@ func (d *Dashboard) ToMarkdown() string {
 
 	for _, group := range d.Groups {
 		buf.WriteString(fmt.Sprintf("# %s\n", group.Title))
-		buf.WriteString("| Title | Query | Type | Description | Unit | Datasource |\n")
-		buf.WriteString("| --- | --- | --- | --- | --- | --- |\n")
+		buf.WriteString("| Title | Query | Type | Description | Datasource | Unit | Legend Format |\n")
+		buf.WriteString("| --- | --- | --- | --- | --- | --- | --- |\n")
 		for _, panel := range group.Panels {
 			var query string
 			if len(panel.Queries) > 0 {
@@ -89,7 +89,7 @@ func (d *Dashboard) ToMarkdown() string {
 
 			// Replace `\n` with `<br/>` for description.
 			description := strings.ReplaceAll(panel.Description, "\n", BRTag)
-			buf.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n", panel.Title, query, codeRef(panel.Type), description, codeRef(panel.Unit), codeRef(panel.Queries[0].Datasource.Type)))
+			buf.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", panel.Title, query, codeRef(panel.Type), description, codeRef(panel.Unit), codeRef(panel.Queries[0].Datasource.Type), codeRef(panel.Queries[0].LegendFormat)))
 		}
 	}
 
@@ -100,5 +100,9 @@ func codeRef(content string) string {
 	if len(content) == 0 {
 		return PlaceholderForEmpty
 	}
-	return fmt.Sprintf("`%s`", content)
+
+	// Replace `|` with `\\|` for markdown.
+	escaped := strings.ReplaceAll(content, "|", "\\|")
+
+	return fmt.Sprintf("`%s`", escaped)
 }
