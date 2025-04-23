@@ -89,7 +89,7 @@ func (d *Dashboard) ToMarkdown() string {
 
 			// Replace `\n` with `<br/>` for description.
 			description := strings.ReplaceAll(panel.Description, "\n", BRTag)
-			buf.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", panel.Title, query, codeRef(panel.Type), description, codeRef(panel.Unit), codeRef(panel.Queries[0].Datasource.Type), codeRef(panel.Queries[0].LegendFormat)))
+			buf.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", panel.Title, query, codeRef(panel.Type), description, codeRef(panel.Queries[0].Datasource.Type), codeRef(panel.Unit), codeRef(panel.Queries[0].LegendFormat)))
 		}
 	}
 
